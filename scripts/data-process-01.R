@@ -11,6 +11,34 @@ dt.wcst <- read.csv(fn[25])
 
 dt.completion <- read.csv(fn[24])
 levels(as.factor(dt.completion$TTF1))
+
+getCompletion <- function (dt.in)
+{
+  dt.in <- dt.completion
+  patID <- c()
+  patID2 <- c()
+data2process <- NULL
+  index = 0
+  index2 = 0
+  dt.temp <- dt.in[,c(6,7,30)]
+  for (i in levels(as.factor (dt.temp$patdeid)))
+  {
+   # i = levels(as.factor(dt.temp$patdeid))[1]
+    dm <- dt.temp [dt.temp$patdeid == as.character(i),]
+    if (sum (dm$TTF2) >= 7 ){
+      index = index + 1
+      patID[index] = as.character(i)
+    }else if (sum(dm$TTF2) >= 5){
+      index2 = index2 + 1
+      patID2[index2] = as.character(i)
+      data2process <- rbind (data2process, dm)
+    }else{
+      next;
+    }
+  }
+}
+
+
 for (i in levels(as.factor(dt.completion$patdeid)))
 {print(i)}
 
