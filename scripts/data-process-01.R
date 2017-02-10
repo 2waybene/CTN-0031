@@ -1,4 +1,4 @@
-setwd("/Users/jianyingli/myGit/CTN-0031/csv/")
+setwd("/Users/li11/myGit/CTN-0031/csv/")
 fn <- list.files(pattern=".csv")
 fn
 
@@ -12,6 +12,7 @@ dt.wcst <- read.csv(fn[25])
 dt.completion <- read.csv(fn[24])
 levels(as.factor(dt.completion$TTF1))
 
+completion <- list()
 getCompletion <- function (dt.in)
 {
   dt.in <- dt.completion
@@ -25,15 +26,15 @@ data2process <- NULL
   {
    # i = levels(as.factor(dt.temp$patdeid))[1]
     dm <- dt.temp [dt.temp$patdeid == as.character(i),]
-    if (sum (dm$TTF2) >= 7 ){
+    if (sum (dm$TTF2) >= 5){
       index = index + 1
       patID[index] = as.character(i)
-    }else if (sum(dm$TTF2) >= 5){
+      temp <- list ("pid" = patID[index], "comp" = 1)
+    }else {
+      #if (sum(dm$TTF2) >= 5){
       index2 = index2 + 1
       patID2[index2] = as.character(i)
-      data2process <- rbind (data2process, dm)
-    }else{
-      next;
+     # data2process <- rbind (data2process, dm)
     }
   }
 }
@@ -69,7 +70,6 @@ table(dt.dem$DEM02) #gender
 
 
 stroop.dt <- dt.stroop[,c(28,12,18,24)]
-
 
 ravlt.dt <- dt.ravlt[c(which(dt.ravlt$RAVLT2R!=98)),c(7,9,11,13,15,17,19,22)]
 
