@@ -9,40 +9,60 @@ dt.ravlt <- read.csv(fn[20])
 dt.stroop <- read.csv(fn[22])
 dt.wcst <- read.csv(fn[25])
 
-dt.completion <- read.csv(fn[24])
-levels(as.factor(dt.completion$TTF1))
 
-completion <- list()
-getCompletion <- function (dt.in)
-{
-  dt.in <- dt.completion
-  patID <- c()
-  patID2 <- c()
-data2process <- NULL
-  index = 0
-  index2 = 0
-  dt.temp <- dt.in[,c(6,7,30)]
+
+##======================================
+## Process the completion status
+##======================================
+dt.completion <- read.csv(fn[24])
+#levels(as.factor(dt.completion$TTF1))
+
+
+list.index = 0
+pids <- c()
+status <- c()
+
+patID <- c()
+patID2 <- c()
+index = 0
+index2 = 0
+
+
+  dt.temp <- dt.completion[,c(6,7,30)]
+  
   for (i in levels(as.factor (dt.temp$patdeid)))
   {
-   # i = levels(as.factor(dt.temp$patdeid))[1]
     dm <- dt.temp [dt.temp$patdeid == as.character(i),]
-    if (sum (dm$TTF2) >= 5){
-      index = index + 1
-      patID[index] = as.character(i)
-      temp <- list ("pid" = patID[index], "comp" = 1)
-    }else {
-      #if (sum(dm$TTF2) >= 5){
-      index2 = index2 + 1
-      patID2[index2] = as.character(i)
-     # data2process <- rbind (data2process, dm)
+    if (sum (dm$TTF2) >= 5)
+      {
+        index = index + 1
+        patID[index] = as.character(i)
+        list.index = list.index + 1
+        temp <- list ("pid" = patID[index], "completion"  = 1)
+        completion <- append(completion, temp)
+      }else {
+        index2 = index2 + 1
+        patID2[index2] = as.character(i)
+        list.index = list.index + 1
+        pids[list.index] = patID2[index2]
+        status[list.index] = 0
+      }
     }
-  }
-}
+
+completion <- list ("pids" = as.vector(as.character(pids)), "completion" = as.vector(status))
+write.table (as.data.frame(completion), file = "completion-processed.txt", col.names = T, row.names = F, sep = "\t")
+
+##========Finished completion==========================================
 
 
-for (i in levels(as.factor(dt.completion$patdeid)))
-{print(i)}
+##====================================
+##  Getting demorgraphic information
+##====================================
 
+
+##========================
+##  gender information
+##========================
 dt.dem <- read.csv(fn[4])
 colnames(dt.dem)
 table(dt.dem$DEM02) #gender
@@ -50,8 +70,24 @@ table(dt.dem$DEM02) #gender
 #2: female
 #03 -- 04x ethnicity
 
+gender.info <- dt.dem[,c(6,19)]
+str(gender.info)
+
+
+dt.w.gender  <- merge(gender.info, completion, by.x = "patdeid", by.y = "pids")
+colnames(dt.w.gender)[2] <- "Gender"
+
+#Male completion
+table(dt.w.gender[which(dt.w.gender$Gender ==1),]$completion)
+
+
+#Female completion
+table(dt.w.gender[which(dt.w.gender$Gender ==2),]$completion)
+
+write.table(dt.w.gender, file = "Gender-completion.txt", col.names = T, row.names = F, sep ="\t")
 ##====================================
 ## stroop test
+
 #31: Color naming
 #31A: minute
 #31B: second
@@ -67,9 +103,40 @@ table(dt.dem$DEM02) #gender
 # 6 trails with xR indicates existing or not
 
 ##======================================
-
-
+dt.stroop <- read.csv(fn[22])
 stroop.dt <- dt.stroop[,c(28,12,18,24)]
+
+(stroop.dt$patdeid %in% completion$pids)
+
+f.merged <- merge(stroop.dt, completion, by.x = "patdeid", by.y = "pids")
+str(f.merged)
+str (dt.w.gender)
+
+f.merged.2 <- merge (f.merged, dt.w.gender, by.x = "patdeid", by.y = "patdeid")
+dim(f.merged.2)
+f.merged.2 <- f.merged.2 [,-5]
+colnames(f.merged.2)[6] <- "completion"
+
+with(f.merged.2, tapply(STR31D, completion, mean))
+with(f.merged.2, tapply(STR32C, completion, mean))
+with(f.merged.2, tapply(STR33D, completion, mean))
+
+data.4.test.male <- f.merged.2[which(f.merged.2[5] == 1),]
+data.4.test.female <- f.merged.2[which(f.merged.2[5] == 2),]
+
+
+##  trying to fit a logistic model on stroop test
+glm.out = glm(completion ~ STR31D * STR32C * STR33D, family=binomial(logit), data=f.merged)
+summary(glm.out)
+
+##  trying to fit a logistic model on stroop test
+glm.out.f = glm(completion ~ STR31D * STR32C * STR33D, family=binomial(logit), data=data.4.test.female)
+summary(glm.out.f)
+
+##  trying to fit a logistic model on stroop test
+glm.out.m = glm(completion ~ STR31D * STR32C * STR33D, family=binomial(logit), data=data.4.test.male)
+summary(glm.out.m)
+
 
 ravlt.dt <- dt.ravlt[c(which(dt.ravlt$RAVLT2R!=98)),c(7,9,11,13,15,17,19,22)]
 
